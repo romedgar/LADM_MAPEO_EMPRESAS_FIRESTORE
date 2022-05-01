@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">LADM_U3_P1_EDGAR_GERARDO_ROJAS_MEDINA_MAPEO_EMPRESAS</string>
+    <string name="title_home">Insertar, Actualizar y Eliminar Areas</string>
+    <string name="title_dashboard">Actualizar y Eliminar Subdepartamentos</string>
+    <string name="title_notifications">Insertar Subdepartamento</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+</resources>
