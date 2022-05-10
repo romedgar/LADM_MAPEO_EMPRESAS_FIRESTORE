@@ -6,19 +6,17 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import ittepic.edu.ladm_u3_p1_edgar_gerardo_rojas_medina_mapeo_empresas.Area
+import com.google.firebase.firestore.FirebaseFirestore
 import ittepic.edu.ladm_u3_p1_edgar_gerardo_rojas_medina_mapeo_empresas.databinding.FragmentConsAreaBinding
-import ittepic.edu.ladm_u3_p1_edgar_gerardo_rojas_medina_mapeo_empresas.databinding.FragmentDepartamentoBinding
 import java.util.ArrayList
 
 class AreaFragment : Fragment() {
 
     private var _binding: FragmentConsAreaBinding? = null
-    var listaIDs = ArrayList<String>()
+    var listaID = ArrayList<String>()
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -51,27 +49,40 @@ class AreaFragment : Fragment() {
 
 
     fun mostrarDatosEnListView(){
-        var listaAreas = Area(this.requireContext()).mostrarTodos()
-        var descripcionAreas = ArrayList<String>()
+        val baseRemota = FirebaseFirestore.getInstance()
+        baseRemota.collection("area")
+            .get()
+            .addOnSuccessListener {
+                var arreglo = ArrayList<String>()
+                listaID.clear()
+                for(documneto in it){
+                    var cadena = "Descripción: ${documneto.getString("descripcion")}\n" +
+                            "División: ${documneto.getString("division")}\n"+
+                            "Empleados: ${documneto.getLong("cantidad_empleados")}"
+                    arreglo.add(cadena)
+                    listaID.add(documneto.id)
+                }
+                binding.lista.adapter = ArrayAdapter<String>(this.requireContext(),
+                    R.layout.simple_list_item_1,arreglo)
 
-        listaIDs.clear()
-        (0..listaAreas.size-1).forEach{
-            val ar = listaAreas.get(it)
-            descripcionAreas.add(ar.descripcion)
-            listaIDs.add(ar.idArea.toString())
-        }
+                binding.lista.setOnItemClickListener { adapterView, view, pos, l ->
+                    val idSeleccionado = listaID.get(pos)
 
-        binding.lista.adapter = ArrayAdapter<String>(this.requireContext(), R.layout.simple_list_item_1,descripcionAreas)
-        binding.lista.setOnItemClickListener { adapterView, view, indice, l ->
-            val idAereaLista = listaIDs.get(indice)
-            val area = Area(this.requireContext()).mostrarUno(idAereaLista.toInt())
+                    AlertDialog.Builder(this.requireContext()).setTitle("ATENCIÓN")
+                        .setMessage("Qué deseas hacer con: ${idSeleccionado}")
+                        .setNegativeButton("SALIR"){d, i->
 
-            AlertDialog.Builder(this.requireContext())
-                .setTitle("Información")
-                .setMessage("Area: ${area.descripcion},\nDivisión: ${area.division}")
-                .setNeutralButton("Cerrar"){d,i->}
-                .show()
-        }
+                        }
+                        .show()
+
+                }
+            }
+            .addOnFailureListener {
+                AlertDialog.Builder(this.requireContext())
+                    .setMessage(it.message)
+                    .show()
+            }
+
     }
 
     fun buscar(descripcion : String, division: String){
@@ -87,75 +98,114 @@ class AreaFragment : Fragment() {
         }
         if (!descripcion.equals("") and !division.equals("")){
             //Aquí se genera la consulta doble
-            var listaAreas = Area(this.requireContext()).mostrarCombinada(descripcion,division)
-            var descripcionAreas = ArrayList<String>()
+            val baseRemota = FirebaseFirestore.getInstance()
+            baseRemota.collection("area")
+                .whereEqualTo("descripcion",descripcion).whereEqualTo("division",division)
+                .get()
+                .addOnSuccessListener {
+                    var arreglo = ArrayList<String>()
+                    listaID.clear()
+                    for(documneto in it){
+                        var cadena = "Descripción: ${documneto.getString("descripcion")}\n" +
+                                "División: ${documneto.getString("division")}\n"+
+                                "Empleados: ${documneto.getLong("cantidad_empleados")}"
+                        arreglo.add(cadena)
+                        listaID.add(documneto.id)
+                    }
+                    binding.lista.adapter = ArrayAdapter<String>(this.requireContext(),
+                        R.layout.simple_list_item_1,arreglo)
 
-            listaIDs.clear()
-            (0..listaAreas.size-1).forEach{
-                val ar = listaAreas.get(it)
-                descripcionAreas.add(ar.descripcion)
-                listaIDs.add(ar.idArea.toString())
-            }
+                    binding.lista.setOnItemClickListener { adapterView, view, pos, l ->
+                        val idSeleccionado = listaID.get(pos)
 
-            binding.lista.adapter = ArrayAdapter<String>(this.requireContext(), R.layout.simple_list_item_1,descripcionAreas)
-            binding.lista.setOnItemClickListener { adapterView, view, indice, l ->
-                val idAereaLista = listaIDs.get(indice)
-                val area = Area(this.requireContext()).mostrarUno(idAereaLista.toInt())
+                        AlertDialog.Builder(this.requireContext()).setTitle("ATENCIÓN")
+                            .setMessage("Qué deseas hacer con: ${idSeleccionado}")
+                            .setNegativeButton("SALIR"){d, i->
 
-                AlertDialog.Builder(this.requireContext())
-                    .setTitle("Información")
-                    .setMessage("Area: ${area.descripcion},\nDivisión: ${area.division}")
-                    .setNeutralButton("Cerrar"){d,i->}
-                    .show()
-            }
+                            }
+                            .show()
+
+                    }
+                }
+                .addOnFailureListener {
+                    AlertDialog.Builder(this.requireContext())
+                        .setMessage(it.message)
+                        .show()
+                }
         }
         if (!descripcion.equals("") and division.equals("")){
             //Aquí se genera la consulta por descripcion
-            var listaAreas = Area(this.requireContext()).mostrarDescrip(descripcion)
-            var descripcionAreas = ArrayList<String>()
+            val baseRemota = FirebaseFirestore.getInstance()
+            baseRemota.collection("area")
+                .whereEqualTo("descripcion",descripcion)
+                .get()
+                .addOnSuccessListener {
+                    var arreglo = ArrayList<String>()
+                    listaID.clear()
+                    for(documneto in it){
+                        var cadena = "Descripción: ${documneto.getString("descripcion")}\n" +
+                                "División: ${documneto.getString("division")}\n"+
+                                "Empleados: ${documneto.getLong("cantidad_empleados")}"
+                        arreglo.add(cadena)
+                        listaID.add(documneto.id)
+                    }
+                    binding.lista.adapter = ArrayAdapter<String>(this.requireContext(),
+                        R.layout.simple_list_item_1,arreglo)
 
-            listaIDs.clear()
-            (0..listaAreas.size-1).forEach{
-                val ar = listaAreas.get(it)
-                descripcionAreas.add(ar.descripcion)
-                listaIDs.add(ar.idArea.toString())
-            }
+                    binding.lista.setOnItemClickListener { adapterView, view, pos, l ->
+                        val idSeleccionado = listaID.get(pos)
 
-            binding.lista.adapter = ArrayAdapter<String>(this.requireContext(), R.layout.simple_list_item_1,descripcionAreas)
-            binding.lista.setOnItemClickListener { adapterView, view, indice, l ->
-                val idAereaLista = listaIDs.get(indice)
-                val area = Area(this.requireContext()).mostrarUno(idAereaLista.toInt())
+                        AlertDialog.Builder(this.requireContext()).setTitle("ATENCIÓN")
+                            .setMessage("Qué deseas hacer con: ${idSeleccionado}")
+                            .setNegativeButton("SALIR"){d, i->
 
-                AlertDialog.Builder(this.requireContext())
-                    .setTitle("Información")
-                    .setMessage("Area: ${area.descripcion},\nDivisión: ${area.division}")
-                    .setNeutralButton("Cerrar"){d,i->}
-                    .show()
-            }
+                            }
+                            .show()
+
+                    }
+                }
+                .addOnFailureListener {
+                    AlertDialog.Builder(this.requireContext())
+                        .setMessage(it.message)
+                        .show()
+                }
         }
         if (descripcion.equals("") and !division.equals("")){
             //Aquí se genera la consulta por división
-            var listaAreas = Area(this.requireContext()).mostrarDiv(division)
-            var descripcionAreas = ArrayList<String>()
+            val baseRemota = FirebaseFirestore.getInstance()
+            baseRemota.collection("area")
+                .whereEqualTo("division",division)
+                .get()
+                .addOnSuccessListener {
+                    var arreglo = ArrayList<String>()
+                    listaID.clear()
+                    for(documneto in it){
+                        var cadena = "Descripción: ${documneto.getString("descripcion")}\n" +
+                                "División: ${documneto.getString("division")}\n"+
+                                "Empleados: ${documneto.getLong("cantidad_empleados")}"
+                        arreglo.add(cadena)
+                        listaID.add(documneto.id)
+                    }
+                    binding.lista.adapter = ArrayAdapter<String>(this.requireContext(),
+                        R.layout.simple_list_item_1,arreglo)
 
-            listaIDs.clear()
-            (0..listaAreas.size-1).forEach{
-                val ar = listaAreas.get(it)
-                descripcionAreas.add(ar.descripcion)
-                listaIDs.add(ar.idArea.toString())
-            }
+                    binding.lista.setOnItemClickListener { adapterView, view, pos, l ->
+                        val idSeleccionado = listaID.get(pos)
 
-            binding.lista.adapter = ArrayAdapter<String>(this.requireContext(), R.layout.simple_list_item_1,descripcionAreas)
-            binding.lista.setOnItemClickListener { adapterView, view, indice, l ->
-                val idAereaLista = listaIDs.get(indice)
-                val area = Area(this.requireContext()).mostrarUno(idAereaLista.toInt())
+                        AlertDialog.Builder(this.requireContext()).setTitle("ATENCIÓN")
+                            .setMessage("Qué deseas hacer con: ${idSeleccionado}")
+                            .setNegativeButton("SALIR"){d, i->
 
-                AlertDialog.Builder(this.requireContext())
-                    .setTitle("Información")
-                    .setMessage("Area: ${area.descripcion},\nDivisión: ${area.division}")
-                    .setNeutralButton("Cerrar"){d,i->}
-                    .show()
-            }
+                            }
+                            .show()
+
+                    }
+                }
+                .addOnFailureListener {
+                    AlertDialog.Builder(this.requireContext())
+                        .setMessage(it.message)
+                        .show()
+                }
         }
     }
 

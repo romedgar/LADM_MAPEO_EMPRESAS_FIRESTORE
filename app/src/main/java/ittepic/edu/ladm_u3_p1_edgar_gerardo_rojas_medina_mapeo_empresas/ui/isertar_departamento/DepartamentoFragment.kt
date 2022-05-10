@@ -6,12 +6,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import ittepic.edu.ladm_u3_p1_edgar_gerardo_rojas_medina_mapeo_empresas.Area
-import ittepic.edu.ladm_u3_p1_edgar_gerardo_rojas_medina_mapeo_empresas.Subdepartamento
+import com.google.firebase.firestore.FirebaseFirestore
 import ittepic.edu.ladm_u3_p1_edgar_gerardo_rojas_medina_mapeo_empresas.databinding.FragmentDepartamentoBinding
 import java.util.ArrayList
 
@@ -56,220 +54,326 @@ class DepartamentoFragment : Fragment() {
         }
         if (descripcion.equals("") and division.equals("") and !edificio.equals("")){
             //Aquí se busca por edificio
-            var listaSubDepto = Subdepartamento(this.requireContext()).mostrarEdi(edificio)
-            var descripcionArea = ArrayList<String>()
+            val baseRemota = FirebaseFirestore.getInstance()
+            baseRemota.collection("subdepartamento")
+                .whereEqualTo("id_edificio",edificio)
+                .get()
+                .addOnSuccessListener {
+                    var arreglo = ArrayList<String>()
+                    listaIDs.clear()
+                    for(documneto in it){
+                        var cadena =
+                            "${documneto.getString("descripcion")}\n" +
+                                    "${documneto.getString("division")}\n" +
+                                    "${documneto.getString("id_edificio")}\n" +
+                                    "Piso: ${documneto.getString("piso")}"
+                        arreglo.add(cadena)
+                        listaIDs.add(documneto.id)
+                    }
+                    binding.lista.adapter = ArrayAdapter<String>(this.requireContext(),
+                        R.layout.simple_list_item_1,arreglo)
 
-            listaIDs.clear()
-            (0..listaSubDepto.size-1).forEach{
-                val dep = listaSubDepto.get(it)
-                descripcionArea.add(dep.descripcion)
-                listaIDs.add(dep.idSubdepto.toString())
-            }
+                    binding.lista.setOnItemClickListener { adapterView, view, pos, l ->
+                        val idSeleccionado = listaIDs.get(pos)
 
-            binding.lista.adapter = ArrayAdapter<String>(this.requireContext(), R.layout.simple_list_item_1,descripcionArea)
-            binding.lista.setOnItemClickListener { adapterView, view, indice, l ->
-                val idDeptosLista = listaIDs.get(indice)
-                val sub = Subdepartamento(this.requireContext()).mostrarUno(idDeptosLista.toInt())
+                        AlertDialog.Builder(this.requireContext()).setTitle("ATENCIÓN")
+                            .setMessage("Qué deseas hacer con: ${idSeleccionado}")
+                            .setNegativeButton("SALIR"){d, i->
 
-                AlertDialog.Builder(this.requireContext())
-                    .setTitle("Información")
-                    .setMessage("Area: ${sub.descripcion},\nDivisión: ${sub.division},\n" +
-                            "Edificio: ${sub.idEdificio},\n" +
-                            "Piso: ${sub.piso}")
-                    .setNeutralButton("Cerrar"){d,i->}
-                    .show()
-            }
+                            }
+                            .show()
+
+                    }
+                }
+                .addOnFailureListener {
+                    AlertDialog.Builder(this.requireContext())
+                        .setMessage(it.message)
+                        .show()
+                }
 
         }
         if (descripcion.equals("") and !division.equals("") and edificio.equals("")){
          //Busqueda por division
-            var listaSubDepto = Subdepartamento(this.requireContext()).mostrarDiv(division)
-            var descripcionArea = ArrayList<String>()
+            val baseRemota = FirebaseFirestore.getInstance()
+            baseRemota.collection("subdepartamento")
+                .whereEqualTo("division",division)
+                .get()
+                .addOnSuccessListener {
+                    var arreglo = ArrayList<String>()
+                    listaIDs.clear()
+                    for(documneto in it){
+                        var cadena =
+                            "${documneto.getString("descripcion")}\n" +
+                                    "${documneto.getString("division")}\n" +
+                                    "${documneto.getString("id_edificio")}\n" +
+                                    "Piso: ${documneto.getString("piso")}"
+                        arreglo.add(cadena)
+                        listaIDs.add(documneto.id)
+                    }
+                    binding.lista.adapter = ArrayAdapter<String>(this.requireContext(),
+                        R.layout.simple_list_item_1,arreglo)
 
-            listaIDs.clear()
-            (0..listaSubDepto.size-1).forEach{
-                val dep = listaSubDepto.get(it)
-                descripcionArea.add(dep.descripcion)
-                listaIDs.add(dep.idSubdepto.toString())
-            }
+                    binding.lista.setOnItemClickListener { adapterView, view, pos, l ->
+                        val idSeleccionado = listaIDs.get(pos)
 
-            binding.lista.adapter = ArrayAdapter<String>(this.requireContext(), R.layout.simple_list_item_1,descripcionArea)
-            binding.lista.setOnItemClickListener { adapterView, view, indice, l ->
-                val idDeptosLista = listaIDs.get(indice)
-                val sub = Subdepartamento(this.requireContext()).mostrarUno(idDeptosLista.toInt())
+                        AlertDialog.Builder(this.requireContext()).setTitle("ATENCIÓN")
+                            .setMessage("Qué deseas hacer con: ${idSeleccionado}")
+                            .setNegativeButton("SALIR"){d, i->
 
-                AlertDialog.Builder(this.requireContext())
-                    .setTitle("Información")
-                    .setMessage("Area: ${sub.descripcion},\nDivisión: ${sub.division},\n" +
-                            "Edificio: ${sub.idEdificio},\n" +
-                            "Piso: ${sub.piso}")
-                    .setNeutralButton("Cerrar"){d,i->}
-                    .show()
-            }
+                            }
+                            .show()
+
+                    }
+                }
+                .addOnFailureListener {
+                    AlertDialog.Builder(this.requireContext())
+                        .setMessage(it.message)
+                        .show()
+                }
 
         }
         if (!descripcion.equals("") and division.equals("") and edificio.equals("")){
             //Busqueda por descripcion
-            var listaSubDepto = Subdepartamento(this.requireContext()).mostrarDescrip(descripcion)
-            var descripcionArea = ArrayList<String>()
+            val baseRemota = FirebaseFirestore.getInstance()
+            baseRemota.collection("subdepartamento")
+                .whereEqualTo("descripcion",descripcion)
+                .get()
+                .addOnSuccessListener {
+                    var arreglo = ArrayList<String>()
+                    listaIDs.clear()
+                    for(documneto in it){
+                        var cadena =
+                            "${documneto.getString("descripcion")}\n" +
+                                    "${documneto.getString("division")}\n" +
+                                    "${documneto.getString("id_edificio")}\n" +
+                                    "Piso: ${documneto.getString("piso")}"
+                        arreglo.add(cadena)
+                        listaIDs.add(documneto.id)
+                    }
+                    binding.lista.adapter = ArrayAdapter<String>(this.requireContext(),
+                        R.layout.simple_list_item_1,arreglo)
 
-            listaIDs.clear()
-            (0..listaSubDepto.size-1).forEach{
-                val dep = listaSubDepto.get(it)
-                descripcionArea.add(dep.descripcion)
-                listaIDs.add(dep.idSubdepto.toString())
-            }
+                    binding.lista.setOnItemClickListener { adapterView, view, pos, l ->
+                        val idSeleccionado = listaIDs.get(pos)
 
-            binding.lista.adapter = ArrayAdapter<String>(this.requireContext(), R.layout.simple_list_item_1,descripcionArea)
-            binding.lista.setOnItemClickListener { adapterView, view, indice, l ->
-                val idDeptosLista = listaIDs.get(indice)
-                val sub = Subdepartamento(this.requireContext()).mostrarUno(idDeptosLista.toInt())
+                        AlertDialog.Builder(this.requireContext()).setTitle("ATENCIÓN")
+                            .setMessage("Qué deseas hacer con: ${idSeleccionado}")
+                            .setNegativeButton("SALIR"){d, i->
 
-                AlertDialog.Builder(this.requireContext())
-                    .setTitle("Información")
-                    .setMessage("Area: ${sub.descripcion},\nDivisión: ${sub.division},\n" +
-                            "Edificio: ${sub.idEdificio},\n" +
-                            "Piso: ${sub.piso}")
-                    .setNeutralButton("Cerrar"){d,i->}
-                    .show()
-            }
+                            }
+                            .show()
+
+                    }
+                }
+                .addOnFailureListener {
+                    AlertDialog.Builder(this.requireContext())
+                        .setMessage(it.message)
+                        .show()
+                }
 
         }
         if (!descripcion.equals("") and !division.equals("") and edificio.equals("")){
             //Busqueda por descripcion y division
-            var listaSubDepto = Subdepartamento(this.requireContext()).mostrarDesyDiv(descripcion,division)
-            var descripcionArea = ArrayList<String>()
+            val baseRemota = FirebaseFirestore.getInstance()
+            baseRemota.collection("subdepartamento")
+                .whereEqualTo("descripcion",descripcion).whereEqualTo("division",division)
+                .get()
+                .addOnSuccessListener {
+                    var arreglo = ArrayList<String>()
+                    listaIDs.clear()
+                    for(documneto in it){
+                        var cadena =
+                            "${documneto.getString("descripcion")}\n" +
+                                    "${documneto.getString("division")}\n" +
+                                    "${documneto.getString("id_edificio")}\n" +
+                                    "Piso: ${documneto.getString("piso")}"
+                        arreglo.add(cadena)
+                        listaIDs.add(documneto.id)
+                    }
+                    binding.lista.adapter = ArrayAdapter<String>(this.requireContext(),
+                        R.layout.simple_list_item_1,arreglo)
 
-            listaIDs.clear()
-            (0..listaSubDepto.size-1).forEach{
-                val dep = listaSubDepto.get(it)
-                descripcionArea.add(dep.descripcion)
-                listaIDs.add(dep.idSubdepto.toString())
-            }
+                    binding.lista.setOnItemClickListener { adapterView, view, pos, l ->
+                        val idSeleccionado = listaIDs.get(pos)
 
-            binding.lista.adapter = ArrayAdapter<String>(this.requireContext(), R.layout.simple_list_item_1,descripcionArea)
-            binding.lista.setOnItemClickListener { adapterView, view, indice, l ->
-                val idDeptosLista = listaIDs.get(indice)
-                val sub = Subdepartamento(this.requireContext()).mostrarUno(idDeptosLista.toInt())
+                        AlertDialog.Builder(this.requireContext()).setTitle("ATENCIÓN")
+                            .setMessage("Qué deseas hacer con: ${idSeleccionado}")
+                            .setNegativeButton("SALIR"){d, i->
 
-                AlertDialog.Builder(this.requireContext())
-                    .setTitle("Información")
-                    .setMessage("Area: ${sub.descripcion},\nDivisión: ${sub.division},\n" +
-                            "Edificio: ${sub.idEdificio},\n" +
-                            "Piso: ${sub.piso}")
-                    .setNeutralButton("Cerrar"){d,i->}
-                    .show()
-            }
+                            }
+                            .show()
+
+                    }
+                }
+                .addOnFailureListener {
+                    AlertDialog.Builder(this.requireContext())
+                        .setMessage(it.message)
+                        .show()
+                }
 
         }
         if (!descripcion.equals("") and division.equals("") and !edificio.equals("")){
+            //Busqueda por descripcion y edificio
             //Busqueda por descripcion y division
-            var listaSubDepto = Subdepartamento(this.requireContext()).mostrarDescripEdi(descripcion,edificio)
-            var descripcionArea = ArrayList<String>()
+            val baseRemota = FirebaseFirestore.getInstance()
+            baseRemota.collection("subdepartamento")
+                .whereEqualTo("descripcion",descripcion).whereEqualTo("id_edificio",edificio)
+                .get()
+                .addOnSuccessListener {
+                    var arreglo = ArrayList<String>()
+                    listaIDs.clear()
+                    for(documneto in it){
+                        var cadena =
+                            "${documneto.getString("descripcion")}\n" +
+                                    "${documneto.getString("division")}\n" +
+                                    "${documneto.getString("id_edificio")}\n" +
+                                    "Piso: ${documneto.getString("piso")}"
+                        arreglo.add(cadena)
+                        listaIDs.add(documneto.id)
+                    }
+                    binding.lista.adapter = ArrayAdapter<String>(this.requireContext(),
+                        R.layout.simple_list_item_1,arreglo)
 
-            listaIDs.clear()
-            (0..listaSubDepto.size-1).forEach{
-                val dep = listaSubDepto.get(it)
-                descripcionArea.add(dep.descripcion)
-                listaIDs.add(dep.idSubdepto.toString())
-            }
+                    binding.lista.setOnItemClickListener { adapterView, view, pos, l ->
+                        val idSeleccionado = listaIDs.get(pos)
 
-            binding.lista.adapter = ArrayAdapter<String>(this.requireContext(), R.layout.simple_list_item_1,descripcionArea)
-            binding.lista.setOnItemClickListener { adapterView, view, indice, l ->
-                val idDeptosLista = listaIDs.get(indice)
-                val sub = Subdepartamento(this.requireContext()).mostrarUno(idDeptosLista.toInt())
+                        AlertDialog.Builder(this.requireContext()).setTitle("ATENCIÓN")
+                            .setMessage("Qué deseas hacer con: ${idSeleccionado}")
+                            .setNegativeButton("SALIR"){d, i->
 
-                AlertDialog.Builder(this.requireContext())
-                    .setTitle("Información")
-                    .setMessage("Area: ${sub.descripcion},\nDivisión: ${sub.division},\n" +
-                            "Edificio: ${sub.idEdificio},\n" +
-                            "Piso: ${sub.piso}")
-                    .setNeutralButton("Cerrar"){d,i->}
-                    .show()
-            }
+                            }
+                            .show()
+
+                    }
+                }
+                .addOnFailureListener {
+                    AlertDialog.Builder(this.requireContext())
+                        .setMessage(it.message)
+                        .show()
+                }
 
         }
         if (descripcion.equals("") and !division.equals("") and !edificio.equals("")){
+            //Busqueda por edificio y division
             //Busqueda por descripcion y division
-            var listaSubDepto = Subdepartamento(this.requireContext()).mostrarDivEdi(division,edificio)
-            var descripcionArea = ArrayList<String>()
+            val baseRemota = FirebaseFirestore.getInstance()
+            baseRemota.collection("subdepartamento")
+                .whereEqualTo("id_edificio",edificio).whereEqualTo("division",division)
+                .get()
+                .addOnSuccessListener {
+                    var arreglo = ArrayList<String>()
+                    listaIDs.clear()
+                    for(documneto in it){
+                        var cadena =
+                            "${documneto.getString("descripcion")}\n" +
+                                    "${documneto.getString("division")}\n" +
+                                    "${documneto.getString("id_edificio")}\n" +
+                                    "Piso: ${documneto.getString("piso")}"
+                        arreglo.add(cadena)
+                        listaIDs.add(documneto.id)
+                    }
+                    binding.lista.adapter = ArrayAdapter<String>(this.requireContext(),
+                        R.layout.simple_list_item_1,arreglo)
 
-            listaIDs.clear()
-            (0..listaSubDepto.size-1).forEach{
-                val dep = listaSubDepto.get(it)
-                descripcionArea.add(dep.descripcion)
-                listaIDs.add(dep.idSubdepto.toString())
-            }
+                    binding.lista.setOnItemClickListener { adapterView, view, pos, l ->
+                        val idSeleccionado = listaIDs.get(pos)
 
-            binding.lista.adapter = ArrayAdapter<String>(this.requireContext(), R.layout.simple_list_item_1,descripcionArea)
-            binding.lista.setOnItemClickListener { adapterView, view, indice, l ->
-                val idDeptosLista = listaIDs.get(indice)
-                val sub = Subdepartamento(this.requireContext()).mostrarUno(idDeptosLista.toInt())
+                        AlertDialog.Builder(this.requireContext()).setTitle("ATENCIÓN")
+                            .setMessage("Qué deseas hacer con: ${idSeleccionado}")
+                            .setNegativeButton("SALIR"){d, i->
 
-                AlertDialog.Builder(this.requireContext())
-                    .setTitle("Información")
-                    .setMessage("Area: ${sub.descripcion},\nDivisión: ${sub.division},\n" +
-                            "Edificio: ${sub.idEdificio},\n" +
-                            "Piso: ${sub.piso}")
-                    .setNeutralButton("Cerrar"){d,i->}
-                    .show()
-            }
+                            }
+                            .show()
+
+                    }
+                }
+                .addOnFailureListener {
+                    AlertDialog.Builder(this.requireContext())
+                        .setMessage(it.message)
+                        .show()
+                }
 
         }
         if (!descripcion.equals("") and !division.equals("") and !edificio.equals("")){
+            //Busqueda por descripcion, division y edificio
             //Busqueda por descripcion y division
-            var listaSubDepto = Subdepartamento(this.requireContext()).mostrarCombinada(descripcion,division, edificio)
-            var descripcionArea = ArrayList<String>()
+            val baseRemota = FirebaseFirestore.getInstance()
+            baseRemota.collection("subdepartamento")
+                .whereEqualTo("descripcion",descripcion).whereEqualTo("division",division).whereEqualTo("id_edificio",edificio)
+                .get()
+                .addOnSuccessListener {
+                    var arreglo = ArrayList<String>()
+                    listaIDs.clear()
+                    for(documneto in it){
+                        var cadena =
+                            "${documneto.getString("descripcion")}\n" +
+                                    "${documneto.getString("division")}\n" +
+                                    "${documneto.getString("id_edificio")}\n" +
+                                    "Piso: ${documneto.getString("piso")}"
+                        arreglo.add(cadena)
+                        listaIDs.add(documneto.id)
+                    }
+                    binding.lista.adapter = ArrayAdapter<String>(this.requireContext(),
+                        R.layout.simple_list_item_1,arreglo)
 
-            listaIDs.clear()
-            (0..listaSubDepto.size-1).forEach{
-                val dep = listaSubDepto.get(it)
-                descripcionArea.add(dep.descripcion)
-                listaIDs.add(dep.idSubdepto.toString())
-            }
+                    binding.lista.setOnItemClickListener { adapterView, view, pos, l ->
+                        val idSeleccionado = listaIDs.get(pos)
 
-            binding.lista.adapter = ArrayAdapter<String>(this.requireContext(), R.layout.simple_list_item_1,descripcionArea)
-            binding.lista.setOnItemClickListener { adapterView, view, indice, l ->
-                val idDeptosLista = listaIDs.get(indice)
-                val sub = Subdepartamento(this.requireContext()).mostrarUno(idDeptosLista.toInt())
+                        AlertDialog.Builder(this.requireContext()).setTitle("ATENCIÓN")
+                            .setMessage("Qué deseas hacer con: ${idSeleccionado}")
+                            .setNegativeButton("SALIR"){d, i->
 
-                AlertDialog.Builder(this.requireContext())
-                    .setTitle("Información")
-                    .setMessage("Area: ${sub.descripcion},\nDivisión: ${sub.division},\n" +
-                            "Edificio: ${sub.idEdificio},\n" +
-                            "Piso: ${sub.piso}")
-                    .setNeutralButton("Cerrar"){d,i->}
-                    .show()
-            }
+                            }
+                            .show()
+
+                    }
+                }
+                .addOnFailureListener {
+                    AlertDialog.Builder(this.requireContext())
+                        .setMessage(it.message)
+                        .show()
+                }
 
         }
 
     }
 
     fun mostrarDatosEnListView(){
-        var listaSubDepto = Subdepartamento(this.requireContext()).mostrarTodos()
-        var descripcionArea = ArrayList<String>()
+        val baseRemota = FirebaseFirestore.getInstance()
+        baseRemota.collection("subdepartamento")
+            .get()
+            .addOnSuccessListener {
+                var arreglo = ArrayList<String>()
+                listaIDs.clear()
+                for(documneto in it){
+                    var cadena =
+                        "${documneto.getString("descripcion")}\n" +
+                                "${documneto.getString("division")}\n" +
+                                "${documneto.getString("id_edificio")}\n" +
+                                "Piso: ${documneto.getString("piso")}"
+                    arreglo.add(cadena)
+                    listaIDs.add(documneto.id)
+                }
+                binding.lista.adapter = ArrayAdapter<String>(this.requireContext(),
+                    R.layout.simple_list_item_1,arreglo)
 
-        listaIDs.clear()
-        (0..listaSubDepto.size-1).forEach{
-            val dep = listaSubDepto.get(it)
-            descripcionArea.add(dep.descripcion)
-            listaIDs.add(dep.idSubdepto.toString())
-        }
+                binding.lista.setOnItemClickListener { adapterView, view, pos, l ->
+                    val idSeleccionado = listaIDs.get(pos)
 
-        binding.lista.adapter = ArrayAdapter<String>(this.requireContext(), R.layout.simple_list_item_1,descripcionArea)
-        binding.lista.setOnItemClickListener { adapterView, view, indice, l ->
-            val idDeptosLista = listaIDs.get(indice)
-            val sub = Subdepartamento(this.requireContext()).mostrarUno(idDeptosLista.toInt())
+                    AlertDialog.Builder(this.requireContext()).setTitle("ATENCIÓN")
+                        .setMessage("Qué deseas hacer con: ${idSeleccionado}")
+                        .setNegativeButton("SALIR"){d, i->
 
-            AlertDialog.Builder(this.requireContext())
-                .setTitle("Información")
-                .setMessage("Area: ${sub.descripcion},\nDivisión: ${sub.division},\n" +
-                        "Edificio: ${sub.idEdificio},\n" +
-                        "Piso: ${sub.piso}")
-                .setNeutralButton("Cerrar"){d,i->}
-                .show()
-        }
+                        }
+                        .show()
+
+                }
+            }
+            .addOnFailureListener {
+                AlertDialog.Builder(this.requireContext())
+                    .setMessage(it.message)
+                    .show()
+            }
     }
 
     override fun onDestroyView() {

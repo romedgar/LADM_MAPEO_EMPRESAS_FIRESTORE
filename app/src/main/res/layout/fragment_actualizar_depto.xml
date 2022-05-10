@@ -22,14 +22,14 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:enabled="false"
-        android:hint="ID AREA (Selecciona en la parte Inferior)"
-        android:id="@+id/idarea"/>
+        android:hint="DESCRIPCION DEL AREA"
+        android:id="@+id/desarea"/>
     <EditText
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:enabled="false"
-        android:hint="DESCRIPCION DEL AREA"
-        android:id="@+id/desarea"/>
+        android:hint="DIVISION DEL AREA"
+        android:id="@+id/division"/>
 
     <Button
         android:layout_width="match_parent"

@@ -1,27 +1,24 @@
 package ittepic.edu.ladm_u3_p1_edgar_gerardo_rojas_medina_mapeo_empresas.ui.home
 
-import android.R
-import android.content.Intent
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import ittepic.edu.ladm_u3_p1_edgar_gerardo_rojas_medina_mapeo_empresas.Area
-import ittepic.edu.ladm_u3_p1_edgar_gerardo_rojas_medina_mapeo_empresas.MainActivity2
+import com.google.firebase.firestore.FirebaseFirestore
 import ittepic.edu.ladm_u3_p1_edgar_gerardo_rojas_medina_mapeo_empresas.databinding.FragmentHomeBinding
-import ittepic.edu.ladm_u3_p1_edgar_gerardo_rojas_medina_mapeo_empresas.ui.dashboard.DashboardFragment
 import java.util.ArrayList
 
 class HomeFragment : Fragment() {
 
     private var _binding: FragmentHomeBinding? = null
-    var listaIDs = ArrayList<String>()
+    var listaID = ArrayList<String>()
+    var idSel = ""
+
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -38,100 +35,145 @@ class HomeFragment : Fragment() {
 
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
         val root: View = binding.root
-        mostrarDatosEnListView()
+
+        //EVENTO (SE DISPARA SOLO)
+        FirebaseFirestore.getInstance()
+            .collection("area")
+            .addSnapshotListener { querySnapshot, firebaseFirestoreException ->
+                if(firebaseFirestoreException != null){
+                    //Si hubo
+                    AlertDialog.Builder(this.requireContext())
+                        .setMessage(firebaseFirestoreException.message)
+                        .show()
+                    return@addSnapshotListener
+                }
+                var arreglo = ArrayList<String>()
+                listaID.clear()
+                for(documneto in querySnapshot!!){
+                    var cadena = "${documneto.getString("descripcion")}\n" +
+                            "${documneto.getString("division")}"
+                    arreglo.add(cadena)
+                    listaID.add(documneto.id)
+                }
+                binding.lista.adapter = ArrayAdapter<String>(this.requireContext(),
+                    android.R.layout.simple_list_item_1,arreglo)
+
+                binding.lista.setOnItemClickListener { adapterView, view, pos, l ->
+                    val idSeleccionado = listaID.get(pos)
+
+                    AlertDialog.Builder(this.requireContext()).setTitle("ATENCIÓN")
+                        .setMessage("Qué deseas hacer con: ${idSeleccionado}")
+                        .setNeutralButton("ELIMINAR"){d, i->
+                            eliminar(idSeleccionado)
+                        }
+                        .setPositiveButton("ACTUALIZAR"){d, i->
+                            actualizar(idSeleccionado)
+                            binding.actualizar.isEnabled = true
+                            binding.insertar.isEnabled = false
+                        }
+                        .setNegativeButton("SALIR"){d, i->
+
+                        }
+                        .show()
+
+                }
+            }
+
 
         _binding!!.insertar.setOnClickListener {
-            var area = Area(this.requireContext())
-            area.descripcion = binding.descripcion.text.toString()
-            area.division = binding.division.text.toString()
-            area.cantidadEmpleados = binding.noPersonas.text.toString().toInt()
+            val baseRemota = FirebaseFirestore.getInstance()
 
-            val resultado = area.insertar()
-            mostrarDatosEnListView()
-            if(resultado){
-                Toast.makeText(this.requireContext(),"SE INSERTO CON EXITO", Toast.LENGTH_LONG)
-                    .show()
-                binding.descripcion.setText("")
-                binding.division.setText("")
-                binding.noPersonas.setText("")
-            }else{
-                AlertDialog.Builder(this.requireContext())
-                    .setTitle("ERROR")
-                    .setMessage("NO SE PUDO INSERTAR")
-                    .show()
-            }
+            val datos = hashMapOf(
+                "descripcion" to binding.descripcion.text.toString(),
+                "division" to binding.division.text.toString(),
+                "cantidad_empleados" to binding.noPersonas.text.toString()
+            )
+
+            baseRemota.collection("area")
+                .add(datos)
+                .addOnSuccessListener {
+                    //Si se pudo
+                    Toast.makeText(this.requireContext(),"Exito! Se inserto", Toast.LENGTH_LONG)
+                        .show()
+                }
+                .addOnFailureListener {
+                    //No se pudo
+                    AlertDialog.Builder(this.requireContext())
+                        .setMessage(it.message)
+                        .show()
+                }
+            binding.descripcion.setText("")
+            binding.division.setText("")
+            binding.noPersonas.setText("")
         }
+
+        binding.actualizar.setOnClickListener {
+            val baseRemota = FirebaseFirestore.getInstance()
+            baseRemota.collection("area")
+                .document(idSel)
+                .update("descripcion",binding.descripcion.text.toString(),
+                    "division", binding.division.text.toString(),
+                    "cantidad_empleados", binding.noPersonas.text.toString())
+                .addOnSuccessListener {
+                    Toast.makeText(this.requireContext(),"Se actualizó con éxito", Toast.LENGTH_LONG)
+                        .show()
+                    binding.descripcion.setText("")
+                    binding.division.setText("")
+                    binding.noPersonas.setText("")
+                    binding.actualizar.isEnabled = false
+                    binding.insertar.isEnabled = true
+                }
+                .addOnFailureListener {
+                    AlertDialog.Builder(this.requireContext())
+                        .setMessage(it.message)
+                        .show()
+                }
+        }
+
         return root
 
     }
 
-    fun mostrarDatosEnListView(){
-        var listaAreas = Area(this.requireContext()).mostrarTodos()
-        var descripcionAreas = ArrayList<String>()
-
-        listaIDs.clear()
-        (0..listaAreas.size-1).forEach{
-            val ar = listaAreas.get(it)
-            descripcionAreas.add(ar.descripcion)
-            listaIDs.add(ar.idArea.toString())
-        }
-
-        binding.lista.adapter = ArrayAdapter<String>(this.requireContext(), R.layout.simple_list_item_1,descripcionAreas)
-        binding.lista.setOnItemClickListener { adapterView, view, indice, l ->
-            val idAereaLista = listaIDs.get(indice)
-            val area = Area(this.requireContext()).mostrarUno(idAereaLista.toInt())
-
-            AlertDialog.Builder(this.requireContext())
-                .setTitle("Atención")
-                .setMessage("Qué deseas hacer con ${area.descripcion},\n División: ${area.division}?")
-                .setNegativeButton("Eliminar"){d,i->
-                    area.eliminar()
-                    mostrarDatosEnListView()
-                }
-                .setPositiveButton("Actualizar"){d,i->
-                    binding.actualizar.isEnabled = true
-                    binding.insertar.isEnabled = false
-                    binding.descripcion.setText(area.descripcion)
-                    binding.division.setText(area.division)
-                    binding.noPersonas.setText(area.cantidadEmpleados.toString())
-                    binding.actualizar.isEnabled = true
-                    idArea = area.idArea
-                }
-                .setNeutralButton("Cerrar"){d,i->}
-                .show()
-        }
-        binding.actualizar.setOnClickListener {
-            var area = Area(this.requireContext())
-            area.idArea = idArea.toInt()
-            area.descripcion = binding.descripcion.text.toString()
-            area.division = binding.division.text.toString()
-            area.cantidadEmpleados = binding.noPersonas.text.toString().toInt()
-
-            val respuesta = area.actualizar()
-            binding.insertar.isEnabled = true
-            binding.actualizar.isEnabled = false
-            mostrarDatosEnListView()
-
-            if(respuesta){
-                Toast.makeText(this.requireContext(),"Se Actualizo correctamente", Toast.LENGTH_LONG)
-                    .show()
-                binding.descripcion.setText("")
-                binding.division.setText("")
-                binding.noPersonas.setText("")
-                idArea = 0
-                binding.actualizar.isEnabled = false
-
-            } else {
-                AlertDialog.Builder(this.requireContext())
-                    .setTitle("Atencion")
-                    .setMessage("ERROR NO SE ACTUALIZO")
+    private fun actualizar(idSeleccionado: String) {
+        val baseRemota = FirebaseFirestore.getInstance()
+        baseRemota.collection("area")
+            .document(idSeleccionado)
+            .get()
+            .addOnSuccessListener {
+                binding.descripcion.setText(it.getString("descripcion"))
+                binding.division.setText(it.getString("division"))
+                binding.noPersonas.setText(it.getString("cantidad_empleados"))
+                idSel = idSeleccionado
             }
-        }
+            .addOnFailureListener {
+                AlertDialog.Builder(this.requireContext())
+                    .setMessage(it.message)
+                    .show()
+            }
+
     }
+
+
+    private fun eliminar(idElegido: String) {
+        val baseRemota = FirebaseFirestore.getInstance()
+        baseRemota.collection("area")
+            .document(idElegido)
+            .delete()
+            .addOnSuccessListener {
+                Toast.makeText(this.requireContext(),"Se elimino con éxito", Toast.LENGTH_LONG)
+            }
+            .addOnFailureListener {
+                AlertDialog.Builder(this.requireContext())
+                    .setMessage(it.message)
+                    .show()
+            }
+    }
+
 
 
     override fun onDestroyView() {
         super.onDestroyView()
         _binding = null
     }
+
 }

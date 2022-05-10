@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "477713258865",
+    "project_id": "ladmapeoempresas",
+    "storage_bucket": "ladmapeoempresas.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:477713258865:android:15b3b80923c4fe91adfed0",
+        "android_client_info": {
+          "package_name": "ittepic.edu.ladm_u3_p1_edgar_gerardo_rojas_medina_mapeo_empresas"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "477713258865-8amln5v65cg2ea4at647r8gtfp97jru7.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBjvbKWy1gVMixTHJEEJU0FUjmcH1u49YI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "477713258865-8amln5v65cg2ea4at647r8gtfp97jru7.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

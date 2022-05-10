@@ -6,15 +6,12 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
-import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import ittepic.edu.ladm_u3_p1_edgar_gerardo_rojas_medina_mapeo_empresas.Area
-import ittepic.edu.ladm_u3_p1_edgar_gerardo_rojas_medina_mapeo_empresas.Subdepartamento
+import com.google.firebase.firestore.FirebaseFirestore
 import ittepic.edu.ladm_u3_p1_edgar_gerardo_rojas_medina_mapeo_empresas.databinding.FragmentActualizarDeptoBinding
-import ittepic.edu.ladm_u3_p1_edgar_gerardo_rojas_medina_mapeo_empresas.databinding.FragmentDepartamentoBinding
 import java.util.ArrayList
 
 class DepartamentoActualizarFragment : Fragment() {
@@ -22,7 +19,7 @@ class DepartamentoActualizarFragment : Fragment() {
     private var _binding: FragmentActualizarDeptoBinding? = null
     var listaIDs = ArrayList<String>()
     var listaIDss = ArrayList<String>()
-    var idSub = 0
+    var idSub = ""
 
     // This property is only valid between onCreateView and
     // onDestroyView.
@@ -46,29 +43,29 @@ class DepartamentoActualizarFragment : Fragment() {
 
 
         binding.actualizar.setOnClickListener {
-            var sub = Subdepartamento(this.requireContext())
-            sub.idSubdepto = idSub
-            sub.idEdificio = binding.edifcio.text.toString()
-            sub.piso = binding.piso.text.toString()
-            sub.idArea = binding.idarea.text.toString().toInt()
+            val baseRemota = FirebaseFirestore.getInstance()
+            baseRemota.collection("subdepartamento")
+                .document(idSub)
+                .update("descripcion",binding.desarea.text.toString(),
+                    "division", binding.division.text.toString(),
+                    "id_edificio", binding.edifcio.text.toString(),
+                    "piso", binding.piso.text.toString())
 
-            val respuesta = sub.actualizar()
-            binding.actualizar.isEnabled = false
-
-            if(respuesta){
-                Toast.makeText(this.requireContext(),"Se Actualizo correctamente", Toast.LENGTH_LONG)
-                    .show()
-                binding.edifcio.setText("")
-                binding.piso.setText("")
-                binding.idarea.setText("")
-                binding.desarea.setText("")
-                idSub = 0
-
-            } else {
-                AlertDialog.Builder(this.requireContext())
-                    .setTitle("Atencion")
-                    .setMessage("ERROR NO SE ACTUALIZO")
-            }
+                .addOnSuccessListener {
+                    Toast.makeText(this.requireContext(),"Se actualizó con éxito", Toast.LENGTH_LONG)
+                        .show()
+                    binding.desarea.setText("")
+                    binding.division.setText("")
+                    binding.edifcio.setText("")
+                    binding.piso.setText("")
+                    binding.actualizar.isEnabled = false
+                    mostrarSubEnListView()
+                }
+                .addOnFailureListener {
+                    AlertDialog.Builder(this.requireContext())
+                        .setMessage(it.message)
+                        .show()
+                }
         }
 
 
@@ -77,41 +74,50 @@ class DepartamentoActualizarFragment : Fragment() {
 
 
     fun mostrarSubEnListView(){
-        var listaSubDepto = Subdepartamento(this.requireContext()).mostrarTodos()
-        var descripcionArea = ArrayList<String>()
-
-        listaIDs.clear()
-        (0..listaSubDepto.size-1).forEach{
-            val dep = listaSubDepto.get(it)
-            descripcionArea.add(dep.descripcion)
-            listaIDs.add(dep.idSubdepto.toString())
-        }
-
-        binding.listaSub.adapter = ArrayAdapter<String>(this.requireContext(), R.layout.simple_list_item_1,descripcionArea)
-        binding.listaSub.setOnItemClickListener { adapterView, view, indice, l ->
-            val idDeptosLista = listaIDs.get(indice)
-            val sub = Subdepartamento(this.requireContext()).mostrarUno(idDeptosLista.toInt())
-
-            AlertDialog.Builder(this.requireContext())
-                .setTitle("Información")
-                .setMessage("Area: ${sub.descripcion},\nDivisión: ${sub.division},\n" +
-                        "Edificio: ${sub.idEdificio},\n" +
-                        "Piso: ${sub.piso}")
-                .setPositiveButton("Actualizar"){d,i->
-                    binding.edifcio.setText(sub.idEdificio)
-                    binding.piso.setText(sub.piso)
-                    binding.idarea.setText(sub.idArea.toString())
-                    binding.desarea.setText(sub.descripcion)
-                    idSub = sub.idSubdepto
-                    binding.actualizar.isEnabled = true
+        val baseRemota = FirebaseFirestore.getInstance()
+        baseRemota.collection("subdepartamento")
+            .get()
+            .addOnSuccessListener {
+                var arreglo = ArrayList<String>()
+                listaIDs.clear()
+                for(documneto in it){
+                    var cadena =
+                        "${documneto.getString("descripcion")}\n" +
+                        "${documneto.getString("division")}\n" +
+                                "${documneto.getString("id_edificio")}\n" +
+                                "Piso: ${documneto.getString("piso")}"
+                    arreglo.add(cadena)
+                    listaIDs.add(documneto.id)
                 }
-                .setNegativeButton("Eliminar"){d,i->
-                    sub.eliminar()
-                    mostrarSubEnListView()
+                binding.listaSub.adapter = ArrayAdapter<String>(this.requireContext(),
+                    R.layout.simple_list_item_1,arreglo)
+
+                binding.listaSub.setOnItemClickListener { adapterView, view, pos, l ->
+                    val idSeleccionado = listaIDs.get(pos)
+
+                    AlertDialog.Builder(this.requireContext()).setTitle("ATENCIÓN")
+                        .setMessage("Qué deseas hacer con: ${idSeleccionado}")
+                        .setPositiveButton("ACTUALIZAR"){d, i->
+                            idSub = idSeleccionado
+                            actualizar(idSeleccionado)
+                            binding.actualizar.isEnabled = true
+
+                        }
+                        .setNeutralButton("ELIMINAR"){d, i->
+                            eliminar(idSeleccionado)
+                        }
+                        .setNegativeButton("SALIR"){d, i->
+
+                        }
+                        .show()
+
                 }
-                .setNeutralButton("Cerrar"){d,i->}
-                .show()
-        }
+            }
+            .addOnFailureListener {
+                AlertDialog.Builder(this.requireContext())
+                    .setMessage(it.message)
+                    .show()
+            }
     }
 /*
     .setPositiveButton("Seleccionar"){d,i->
@@ -120,32 +126,95 @@ class DepartamentoActualizarFragment : Fragment() {
     }*/
 
     fun mostrarDatosEnListView(){
-        var listaAreas = Area(this.requireContext()).mostrarTodos()
-        var descripcionAreas = ArrayList<String>()
-
-        listaIDss.clear()
-        (0..listaAreas.size-1).forEach{
-            val ar = listaAreas.get(it)
-            descripcionAreas.add(ar.descripcion)
-            listaIDss.add(ar.idArea.toString())
-        }
-
-        binding.lista.adapter = ArrayAdapter<String>(this.requireContext(), R.layout.simple_list_item_1,descripcionAreas)
-        binding.lista.setOnItemClickListener { adapterView, view, indice, l ->
-            val idAereaLista = listaIDss.get(indice)
-            val area = Area(this.requireContext()).mostrarUno(idAereaLista.toInt())
-
-            AlertDialog.Builder(this.requireContext())
-                .setTitle("Atención")
-                .setMessage("Qué deseas hacer con ${area.descripcion},\n División: ${area.division}?")
-                .setPositiveButton("Seleccionar"){d,i->
-                    binding.idarea.setText(area.idArea.toString())
-                    binding.desarea.setText(area.descripcion)
+        FirebaseFirestore.getInstance()
+            .collection("area")
+            .addSnapshotListener { querySnapshot, firebaseFirestoreException ->
+                if(firebaseFirestoreException != null){
+                    //Si hubo
+                    AlertDialog.Builder(this.requireContext())
+                        .setMessage(firebaseFirestoreException.message)
+                        .show()
+                    return@addSnapshotListener
                 }
-                .setNeutralButton("Cerrar"){d,i->}
-                .show()
-        }
+                var arreglo = ArrayList<String>()
+                listaIDss.clear()
+                for(documneto in querySnapshot!!){
+                    var cadena = "${documneto.getString("descripcion")}\n" +
+                            "${documneto.getString("division")}"
+                    arreglo.add(cadena)
+                    listaIDss.add(documneto.id)
+                }
+                binding.lista.adapter = ArrayAdapter<String>(this.requireContext(),
+                    android.R.layout.simple_list_item_1,arreglo)
+
+                binding.lista.setOnItemClickListener { adapterView, view, pos, l ->
+                    val idSeleccionado = listaIDss.get(pos)
+
+                    AlertDialog.Builder(this.requireContext()).setTitle("ATENCIÓN")
+                        .setMessage("Qué deseas hacer con: ${idSeleccionado}")
+                        .setPositiveButton("SELECCIONAR"){d, i->
+                            obtenerDescrip(idSeleccionado)
+                        }
+                        .setNegativeButton("SALIR"){d, i->
+
+                        }
+                        .show()
+
+                }
+            }
     }
+
+    fun obtenerDescrip(idSeleccionado : String){
+        val baseRemota = FirebaseFirestore.getInstance()
+        baseRemota.collection("area")
+            .document(idSeleccionado)
+            .get()
+            .addOnSuccessListener {
+                binding.desarea.setText(it.getString("descripcion"))
+                binding.division.setText(it.getString("division"))
+            }
+            .addOnFailureListener {
+                AlertDialog.Builder(this.requireContext())
+                    .setMessage(it.message)
+                    .show()
+            }
+    }
+
+    fun actualizar(idSeleccionado: String){
+        val baseRemota = FirebaseFirestore.getInstance()
+        baseRemota.collection("subdepartamento")
+            .document(idSeleccionado)
+            .get()
+            .addOnSuccessListener {
+                binding.edifcio.setText(it.getString("id_edificio"))
+                binding.piso.setText(it.getString("piso"))
+                binding.desarea.setText(it.getString("descripcion"))
+                binding.division.setText(it.getString("division"))
+            }
+            .addOnFailureListener {
+                AlertDialog.Builder(this.requireContext())
+                    .setMessage(it.message)
+                    .show()
+            }
+    }
+
+    private fun eliminar(idElegido: String) {
+        val baseRemota = FirebaseFirestore.getInstance()
+        baseRemota.collection("subdepartamento")
+            .document(idElegido)
+            .delete()
+            .addOnSuccessListener {
+                Toast.makeText(this.requireContext(),"Se elimino con éxito", Toast.LENGTH_LONG)
+                mostrarSubEnListView()
+            }
+            .addOnFailureListener {
+                AlertDialog.Builder(this.requireContext())
+                    .setMessage(it.message)
+                    .show()
+            }
+    }
+
+
 
     override fun onDestroyView() {
         super.onDestroyView()
