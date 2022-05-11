@@ -145,7 +145,7 @@ class AreaFragment : Fragment() {
                     for(documneto in it){
                         var cadena = "Descripción: ${documneto.getString("descripcion")}\n" +
                                 "División: ${documneto.getString("division")}\n"+
-                                "Empleados: ${documneto.getLong("cantidad_empleados")}"
+                                "Empleados: ${documneto.getString("cantidad_empleados")}"
                         arreglo.add(cadena)
                         listaID.add(documneto.id)
                     }
@@ -182,7 +182,7 @@ class AreaFragment : Fragment() {
                     for(documneto in it){
                         var cadena = "Descripción: ${documneto.getString("descripcion")}\n" +
                                 "División: ${documneto.getString("division")}\n"+
-                                "Empleados: ${documneto.getLong("cantidad_empleados")}"
+                                "Empleados: ${documneto.getString("cantidad_empleados")}"
                         arreglo.add(cadena)
                         listaID.add(documneto.id)
                     }
